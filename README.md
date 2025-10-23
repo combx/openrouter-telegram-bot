@@ -22,54 +22,39 @@ This project was developed with the assistance of an AI assistant and serves as 
     - Get paginated lists of all users (`/listusers`).
     - Receive real-time error notifications.
 - **Modular Architecture**: The code is organized into logical modules (`handlers`, `shared`, `database`) for easy maintenance and scalability.
-- **Deployment Ready**: Comes with instructions for running as a `systemd` service for reliability.
 
-## Currently Available Models
+## Prerequisites: Getting Your Keys
 
-This bot currently includes the following free models from OpenRouter.ai:
+Before you can run the bot, you need three secret keys.
 
-- `Meta Llama 3.3 8B`
-- `OpenAI GPT-OSS 20B`
-- `Nvidia Nemotron 9B`
-- `Qwen3 235B`
-- `DeepSeek Chimera R1T2`
-- `GLM 4.5 Air`
+### 1. Telegram Bot Token
+1.  Open Telegram and search for the `@BotFather` bot.
+2.  Send the `/newbot` command.
+3.  Follow the instructions to give your bot a name and a username.
+4.  BotFather will send you a token that looks like `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`. **Save this token.**
 
-**To change the list of models:**
-1.  Open the `shared.py` file.
-2.  Find the `AVAILABLE_MODELS` dictionary.
-3.  Modify the list by adding, removing, or changing the model identifiers. The key is the user-facing name, and the value is the official API identifier from OpenRouter.
+### 2. OpenRouter API Key
+1.  Go to **[openrouter.ai](https://openrouter.ai/)** and sign up for an account.
+2.  Navigate to the **"Keys"** section in your account dashboard.
+3.  Click **"Create Key"** and give it a name.
+4.  OpenRouter will generate a key that starts with `sk-or-v1-...`. **Copy and save this key.**
 
-## Currently Available Roles
+#### Important Note on OpenRouter Rate Limits
+OpenRouter has rate limits for free models:
+-   **By default:** You are limited to **50 requests per day**.
+-   **To increase the limit:** You need to add credits to your account. Adding at least **$10 in credits** increases your free request limit to **1,000 requests per day**. You do not need to spend these credits to use the free models; their presence on your balance is enough to lift the limit.
 
-The bot supports the following predefined roles in both English and Russian:
-- Helpful Assistant (Default)
-- Python Expert
-- Translator
-- Marketer
-- Storyteller
-- Poet
-- Chef
-
-**To change the list of roles:**
-1.  Open the `shared.py` file.
-2.  Find the `AVAILABLE_ROLES` dictionary.
-3.  Modify the list for the desired language (`ru` or `en`).
-
-## Finding More Models on OpenRouter.ai
-
-You can easily find and add more models to this bot.
-
-1.  Go to the official models page: **[openrouter.ai/models](https://openrouter.ai/models)**.
-2.  On this page, you can see a complete table of all available models. To find the model identifier needed for the code, look in the **"ID"** column.
-3.  **Difference between free and paid models:**
-    - **Free Models:** These models are marked with a price of **$0.00 / 1M tokens**. Using them does not require any funds on your OpenRouter account. They are often excellent open-source models.
-    - **Paid Models:** These include powerful proprietary models like OpenAI's GPT-4o or Anthropic's Claude 3 Opus. Their price is listed per 1 million input and output tokens. To use them, you need to add credits to your OpenRouter account balance.
+### 3. Your Admin User ID
+To use the admin panel, the bot needs to know your personal Telegram User ID.
+1.  Open Telegram and search for the `@userinfobot`.
+2.  Send it the `/start` command.
+3.  The bot will immediately reply with your User ID. **Save this number.**
 
 ## How to Run
 
 1.  **Clone the repository:**
     ```bash
+    # Replace YourUsername and repository-name with your actual data
     git clone https://github.com/combx/openrouter-telegram-bot.git
     cd openrouter-telegram-bot
     ```
@@ -85,13 +70,12 @@ You can easily find and add more models to this bot.
     pip install -r requirements.txt
     ```
 
-4.  **Create a `.env` file** in the root directory and fill it with your keys:
+4.  **Create a `.env` file** in the root directory and fill it with the keys you obtained:
     ```env
     TELEGRAM_BOT_TOKEN="YOUR_TELEGRAM_TOKEN"
     OPENROUTER_API_KEY="YOUR_OPENROUTER_KEY"
     ADMIN_ID="YOUR_TELEGRAM_USER_ID"
     ```
-    *(You can get your `ADMIN_ID` by messaging `@userinfobot` on Telegram)*
 
 5.  **Run the bot:**
     ```bash
@@ -132,54 +116,39 @@ Contributions are welcome! If you have suggestions for improvements or new featu
     - Получение списков всех пользователей с пагинацией (`/listusers`).
     - Получение уведомлений об ошибках в реальном времени.
 - **Модульная архитектура**: Код организован в логические модули (`handlers`, `shared`, `database`) для простоты поддержки и масштабирования.
-- **Готовность к развертыванию**: Включает инструкции для запуска в виде сервиса `systemd` для надежной работы.
 
-## Доступные на данный момент модели
+## Подготовка: Получение ключей
 
-В данный момент бот включает в себя следующие бесплатные модели с OpenRouter.ai:
+Перед запуском бота вам понадобятся три секретных ключа.
 
-- `Meta Llama 3.3 8B`
-- `OpenAI GPT-OSS 20B`
-- `Nvidia Nemotron 9B`
-- `Qwen3 235B`
-- `DeepSeek Chimera R1T2`
-- `GLM 4.5 Air`
+### 1. Токен Telegram-бота
+1.  Откройте Telegram и найдите бота `@BotFather`.
+2.  Отправьте ему команду `/newbot`.
+3.  Следуйте инструкциям, чтобы дать боту имя и юзернейм.
+4.  BotFather пришлет вам токен. **Сохраните этот токен.**
 
-**Чтобы изменить список моделей:**
-1.  Откройте файл `shared.py`.
-2.  Найдите словарь `AVAILABLE_MODELS`.
-3.  Измените список, добавляя, удаляя или изменяя идентификаторы моделей. Ключ — это имя для пользователя, а значение — официальный идентификатор API с сайта OpenRouter.
+### 2. API-ключ OpenRouter
+1.  Перейдите на сайт **[openrouter.ai](https://openrouter.ai/)** и зарегистрируйтесь.
+2.  В панели управления вашего аккаунта перейдите в раздел **"Keys"** (Ключи).
+3.  Нажмите **"Create Key"** и дайте ключу имя.
+4.  OpenRouter сгенерирует ключ, начинающийся с `sk-or-v1-...`. **Скопируйте и сохраните этот ключ.**
 
-## Доступные на данный момент роли
+#### Важное замечание о лимитах OpenRouter
+OpenRouter имеет ограничения на использование бесплатных моделей:
+-   **По умолчанию:** Вы ограничены **50 запросами в день**.
+-   **Чтобы увеличить лимит:** Вам необходимо пополнить баланс. Пополнение счета на сумму от **$10** увеличивает ваш лимит на бесплатные запросы до **1000 в день**. Вам не нужно тратить эти кредиты на бесплатные модели; их наличие на балансе достаточно для снятия ограничения.
 
-Бот поддерживает следующие предопределенные роли на русском и английском языках:
-- Полезный ассистент (По умолчанию)
-- Python-эксперт
-- Переводчик
-- Маркетолог
-- Рассказчик
-- Поэт
-- Шеф-повар
-
-**Чтобы изменить список ролей:**
-1.  Откройте файл `shared.py`.
-2.  Найдите словарь `AVAILABLE_ROLES`.
-3.  Измените список для нужного языка (`ru` или `en`).
-
-## Как найти другие модели на OpenRouter.ai
-
-Вы можете легко находить и добавлять в бота новые модели.
-
-1.  Перейдите на официальную страницу моделей: **[openrouter.ai/models](https://openrouter.ai/models)**.
-2.  На этой странице вы увидите полную таблицу всех доступных моделей. Чтобы найти идентификатор модели для кода, смотрите в колонку **"ID"**.
-3.  **Разница между бесплатными и платными моделями:**
-    - **Бесплатные модели:** У этих моделей указана цена **$0.00 / 1M tokens**. Их использование не требует средств на вашем балансе OpenRouter. Часто это отличные open-source модели.
-    - **Платные модели:** К ним относятся мощные проприетарные модели, такие как GPT-4o от OpenAI или Claude 3 Opus от Anthropic. Их цена указана за 1 миллион входных и выходных токенов. Для их использования необходимо пополнить баланс вашего аккаунта OpenRouter.
+### 3. ID администратора
+Чтобы использовать админ-панель, боту нужно знать ваш личный ID в Telegram.
+1.  Откройте Telegram и найдите бота `@userinfobot`.
+2.  Отправьте ему команду `/start`.
+3.  Бот немедленно ответит сообщением, в котором будет указан ваш User ID. **Сохраните это число.**
 
 ## Как запустить
 
 1.  **Клонируйте репозиторий:**
     ```bash
+    # Замените YourUsername и repository-name на ваши реальные данные
     git clone https://github.com/combx/openrouter-telegram-bot.git
     cd openrouter-telegram-bot
     ```
@@ -195,13 +164,12 @@ Contributions are welcome! If you have suggestions for improvements or new featu
     pip install -r requirements.txt
     ```
 
-4.  **Создайте файл `.env`** в корневой директории и заполните его вашими ключами:
+4.  **Создайте файл `.env`** в корневой директории и заполните его полученными ключами:
     ```env
     TELEGRAM_BOT_TOKEN="ВАШ_ТЕЛЕГРАМ_ТОКЕН"
     OPENROUTER_API_KEY="ВАШ_КЛЮЧ_OPENROUTER"
     ADMIN_ID="ВАШ_TELEGRAM_USER_ID"
     ```
-    *(Вы можете получить ваш `ADMIN_ID`, написав боту `@userinfobot` в Telegram)*
 
 5.  **Запустите бота:**
     ```bash
@@ -211,5 +179,5 @@ Contributions are welcome! If you have suggestions for improvements or new featu
 ## Участие в проекте
 
 Я открыт для ваших идей и предложений! Если вы хотите улучшить проект или добавить новые функции, вы можете:
-- **Создать Issue (задачу)**, чтобы обсудить то, что вы хотели бы изменить.
-- **Отправить Pull Request (запрос на слияние)** с вашими изменениями.
+- **Создать Issue (задачу)**, чтобы обсудить то, что вы хотели бы изменить или если вы нашли ошибки.
+- **Отправить Pull Request** с вашими изменениями если этих ошибок много.
