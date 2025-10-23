@@ -56,6 +56,12 @@ This project was developed with the assistance of an AI assistant and serves as 
     python3 bot.py
     ```
 
+## Contributing
+
+Contributions are welcome! If you have suggestions for improvements or new features, feel free to:
+- **Open an Issue** to discuss what you would like to change.
+- **Submit a Pull Request** with your proposed changes.
+
 ---
 
 <br>
@@ -117,3 +123,9 @@ This project was developed with the assistance of an AI assistant and serves as 
     ```bash
     python3 bot.py
     ```
+
+## Участие в проекте
+
+Я открыт для ваших идей и предложений! Если вы хотите улучшить проект или добавить новые функции, вы можете:
+- **Создать Issue (задачу)**, чтобы обсудить то, что вы хотели бы изменить.
+- **Отправить Pull Request (запрос на слияние)** с вашими изменениями.
