@@ -24,6 +24,48 @@ This project was developed with the assistance of an AI assistant and serves as 
 - **Modular Architecture**: The code is organized into logical modules (`handlers`, `shared`, `database`) for easy maintenance and scalability.
 - **Deployment Ready**: Comes with instructions for running as a `systemd` service for reliability.
 
+## Currently Available Models
+
+This bot currently includes the following free models from OpenRouter.ai:
+
+- `Meta Llama 3.3 8B`
+- `OpenAI GPT-OSS 20B`
+- `Nvidia Nemotron 9B`
+- `Qwen3 235B`
+- `DeepSeek Chimera R1T2`
+- `GLM 4.5 Air`
+
+**To change the list of models:**
+1.  Open the `shared.py` file.
+2.  Find the `AVAILABLE_MODELS` dictionary.
+3.  Modify the list by adding, removing, or changing the model identifiers. The key is the user-facing name, and the value is the official API identifier from OpenRouter.
+
+## Currently Available Roles
+
+The bot supports the following predefined roles in both English and Russian:
+- Helpful Assistant (Default)
+- Python Expert
+- Translator
+- Marketer
+- Storyteller
+- Poet
+- Chef
+
+**To change the list of roles:**
+1.  Open the `shared.py` file.
+2.  Find the `AVAILABLE_ROLES` dictionary.
+3.  Modify the list for the desired language (`ru` or `en`).
+
+## Finding More Models on OpenRouter.ai
+
+You can easily find and add more models to this bot.
+
+1.  Go to the official models page: **[openrouter.ai/models](https://openrouter.ai/models)**.
+2.  On this page, you can see a complete table of all available models. To find the model identifier needed for the code, look in the **"ID"** column.
+3.  **Difference between free and paid models:**
+    - **Free Models:** These models are marked with a price of **$0.00 / 1M tokens**. Using them does not require any funds on your OpenRouter account. They are often excellent open-source models.
+    - **Paid Models:** These include powerful proprietary models like OpenAI's GPT-4o or Anthropic's Claude 3 Opus. Their price is listed per 1 million input and output tokens. To use them, you need to add credits to your OpenRouter account balance.
+
 ## How to Run
 
 1.  **Clone the repository:**
@@ -91,6 +133,48 @@ Contributions are welcome! If you have suggestions for improvements or new featu
     - Получение уведомлений об ошибках в реальном времени.
 - **Модульная архитектура**: Код организован в логические модули (`handlers`, `shared`, `database`) для простоты поддержки и масштабирования.
 - **Готовность к развертыванию**: Включает инструкции для запуска в виде сервиса `systemd` для надежной работы.
+
+## Доступные на данный момент модели
+
+В данный момент бот включает в себя следующие бесплатные модели с OpenRouter.ai:
+
+- `Meta Llama 3.3 8B`
+- `OpenAI GPT-OSS 20B`
+- `Nvidia Nemotron 9B`
+- `Qwen3 235B`
+- `DeepSeek Chimera R1T2`
+- `GLM 4.5 Air`
+
+**Чтобы изменить список моделей:**
+1.  Откройте файл `shared.py`.
+2.  Найдите словарь `AVAILABLE_MODELS`.
+3.  Измените список, добавляя, удаляя или изменяя идентификаторы моделей. Ключ — это имя для пользователя, а значение — официальный идентификатор API с сайта OpenRouter.
+
+## Доступные на данный момент роли
+
+Бот поддерживает следующие предопределенные роли на русском и английском языках:
+- Полезный ассистент (По умолчанию)
+- Python-эксперт
+- Переводчик
+- Маркетолог
+- Рассказчик
+- Поэт
+- Шеф-повар
+
+**Чтобы изменить список ролей:**
+1.  Откройте файл `shared.py`.
+2.  Найдите словарь `AVAILABLE_ROLES`.
+3.  Измените список для нужного языка (`ru` или `en`).
+
+## Как найти другие модели на OpenRouter.ai
+
+Вы можете легко находить и добавлять в бота новые модели.
+
+1.  Перейдите на официальную страницу моделей: **[openrouter.ai/models](https://openrouter.ai/models)**.
+2.  На этой странице вы увидите полную таблицу всех доступных моделей. Чтобы найти идентификатор модели для кода, смотрите в колонку **"ID"**.
+3.  **Разница между бесплатными и платными моделями:**
+    - **Бесплатные модели:** У этих моделей указана цена **$0.00 / 1M tokens**. Их использование не требует средств на вашем балансе OpenRouter. Часто это отличные open-source модели.
+    - **Платные модели:** К ним относятся мощные проприетарные модели, такие как GPT-4o от OpenAI или Claude 3 Opus от Anthropic. Их цена указана за 1 миллион входных и выходных токенов. Для их использования необходимо пополнить баланс вашего аккаунта OpenRouter.
 
 ## Как запустить
 
