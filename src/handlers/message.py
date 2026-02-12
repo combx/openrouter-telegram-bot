@@ -7,6 +7,8 @@ from src.services.openrouter import OpenRouterService
 from src.config import Config
 import json
 
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
@@ -23,27 +25,41 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Handle States
         if user.state == "SEARCH_MODE":
-            # Perform search (mockup for now as we don't have a real search index of 100s models without API call)
-            # Actually OpenRouter API list models. We can filter them.
             status = await update.message.reply_text("🔎 Searching...")
             
             api_key = user.custom_api_key or Config.OPENROUTER_API_KEY
             service = OpenRouterService(api_key=api_key)
             
-            # Simple search logic
-            # In a real app, we should cache the model list
             try:
-                # We can't easily search via API without fetching all. 
-                # Let's assume the user wants to set the model directly or we show top matches from a hardcoded list for now
-                # Or better: just set the model if it looks like a model ID, or search in a hardcoded list.
-                # Since I don't have the full list, I'll allow setting it if it contains "/"
-                
-                if "/" in text:
+                # If looks like a direct ID (has / and no spaces), try to set it
+                if "/" in text and " " not in text:
                     await update_user_model(session, user_id, text)
                     await context.bot.edit_message_text(chat_id=chat_id, message_id=status.message_id, text=f"✅ Model set to `{text}`", parse_mode="Markdown")
                     await set_user_state(session, user_id, None)
                 else:
-                    await context.bot.edit_message_text(chat_id=chat_id, message_id=status.message_id, text="❌ Invalid model format. Please enter `vendor/model_name` or use the menu.")
+                    # Perform search
+                    results = await service.search_models(text)
+                    
+                    if not results:
+                        await context.bot.edit_message_text(chat_id=chat_id, message_id=status.message_id, text="❌ No models found. Try a different query.")
+                    else:
+                        keyboard = []
+                        for model in results[:5]:
+                            name = model.get('name', model.get('id'))
+                            # Shorten name
+                            if len(name) > 30: name = name[:27] + "..."
+                            keyboard.append([InlineKeyboardButton(name, callback_data=f"set_model_{model.get('id')}")])
+                        
+                        keyboard.append([InlineKeyboardButton("⬅️ Back", callback_data="menu_model")])
+                        
+                        await context.bot.edit_message_text(
+                            chat_id=chat_id, 
+                            message_id=status.message_id, 
+                            text=f"🔎 Found {len(results)} models for `{text}`:", 
+                            reply_markup=InlineKeyboardMarkup(keyboard),
+                            parse_mode="Markdown"
+                        )
+                        await set_user_state(session, user_id, None)
                     
             except Exception as e:
                 await context.bot.edit_message_text(chat_id=chat_id, message_id=status.message_id, text=f"Error: {e}")
@@ -67,10 +83,18 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         status_msg = await update.message.reply_text("⏳ Thinking...")
         
-        messages = [
-            {"role": "system", "content": f"You are a {user.current_role}."},
-            {"role": "user", "content": text}
-        ]
+        # Load History
+        try:
+            history = json.loads(user.context_history) if user.context_history else []
+            if not isinstance(history, list): history = []
+        except:
+            history = []
+            
+        # Append User Message
+        history.append({"role": "user", "content": text})
+        
+        # Prepare Messages for API (System + History)
+        messages = [{"role": "system", "content": f"You are a {user.current_role}."}] + history
         
         full_response = ""
         last_edit_time = 0
@@ -96,14 +120,59 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 message_id=status_msg.message_id,
                 text=full_response
             )
-            await increment_usage(session, user_id)
+            
+            # Save Assistant Response to History
+            history.append({"role": "assistant", "content": full_response})
+            
+            # Trim History (Keep last 20 messages to save context/tokens)
+            if len(history) > 20:
+                history = history[-20:]
+                
+            user.context_history = json.dumps(history)
+            await increment_usage(session, user_id) # formatting helper that commits
+            # Note: increment_usage commits, so our context_history change is saved too IF it's attached to session.
+            # But increment_usage executes a specific UPDATE statement, it might NOT commit the user object changes if using ORM + explicit update.
+            # Let's verify increment_usage implementation. 
+            # It uses update(User)... so it might NOT save 'user.context_history' if we just set the attribute.
+            # We should explicitly update the context history or ensure it's saved.
+            
+            # Safe update for history
+            from sqlalchemy import update as sa_update
+            from src.database.models import User
+            stmt = sa_update(User).where(User.id == user_id).values(context_history=json.dumps(history))
+            await session.execute(stmt)
+            await session.commit()
 
         except Exception as e:
             await log_error(session, user_id, str(e), "")
-            error_text = f"⚠️ Error: {str(e)}"
-            if full_response:
-                error_text += "\n\nPartial response received."
-                await context.bot.edit_message_text(chat_id=chat_id, message_id=status_msg.message_id, text=full_response)
-                await update.message.reply_text(error_text)
+            error_str = str(e)
+            
+            # Smart Error Handling
+            if "429" in error_str or "rate-limited" in error_str.lower():
+                kb = InlineKeyboardMarkup([[InlineKeyboardButton("🤖 Change Model", callback_data="menu_model")]])
+                friendly_text = (
+                    f"⚠️ **Model Overloaded**\n\n"
+                    f"The model `{user.current_model}` is currently rate-limited by the provider.\n"
+                    f"Please try again later or choose a different model."
+                )
+                if not full_response:
+                    await context.bot.edit_message_text(
+                        chat_id=chat_id, 
+                        message_id=status_msg.message_id, 
+                        text=friendly_text,
+                        reply_markup=kb,
+                        parse_mode="Markdown"
+                    )
+                else:
+                     await update.message.reply_text(friendly_text, reply_markup=kb, parse_mode="Markdown")
+            
             else:
-                await context.bot.edit_message_text(chat_id=chat_id, message_id=status_msg.message_id, text=error_text)
+                # Generic Error
+                error_text = f"⚠️ Error: {error_str}"
+                if full_response:
+                    error_text += "\n\nPartial response received."
+                    await context.bot.edit_message_text(chat_id=chat_id, message_id=status_msg.message_id, text=full_response)
+                    await update.message.reply_text(error_text)
+                else:
+                    await context.bot.edit_message_text(chat_id=chat_id, message_id=status_msg.message_id, text=error_text)
+

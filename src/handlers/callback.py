@@ -3,6 +3,8 @@ from telegram.ext import ContextTypes
 from src.utils.keyboard import Keyboards
 from src.services.user_service import update_user_model, set_custom_key, get_user, update_user_role, set_user_state
 from src.database import get_db
+from src.services.openrouter import OpenRouterService
+from src.config import Config
 
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -17,7 +19,6 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not user: return
 
         if data == "menu_main":
-            from src.config import Config
             is_admin = (user_id == Config.ADMIN_ID)
             await query.edit_message_text(
                 "Main Menu:",
@@ -25,12 +26,25 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             
         elif data == "menu_model":
+            # Fetch top free models
+            service = OpenRouterService(api_key=Config.OPENROUTER_API_KEY)
+            models = await service.get_free_models()
+            
             await query.edit_message_text(
-                f"Current Model: `{user.current_model}`",
-                reply_markup=Keyboards.model_menu(user.current_model),
+                f"Current Model: `{user.current_model}`\n\nSelect a top free model or search manually:",
+                reply_markup=Keyboards.model_menu(user.current_model, models),
                 parse_mode="Markdown"
             )
-            
+        
+        elif data.startswith("set_model_"):
+            model_id = data.replace("set_model_", "")
+            await update_user_model(session, user_id, model_id)
+            await query.edit_message_text(
+                f"✅ Model set to `{model_id}`",
+                reply_markup=Keyboards.back_to_main(),
+                parse_mode="Markdown"
+            )
+
         elif data == "menu_profile":
             stats = f"""
 👤 **Profile**
@@ -97,3 +111,9 @@ Key Type: {"Custom" if user.custom_api_key else "Shared"}
             else:
                 await update_user_role(session, user_id, role_code)
                 await query.edit_message_text(f"✅ Role set to `{role_code}`", reply_markup=Keyboards.main_menu((user_id == Config.ADMIN_ID)))
+
+        elif data == "clear_context":
+            from src.services.user_service import clear_user_context
+            await clear_user_context(session, user_id)
+            await query.answer("Memory cleared! 🧠✨", show_alert=True)
+            # await query.edit_message_text("Context cleared.", reply_markup=Keyboards.main_menu((user_id == Config.ADMIN_ID)))

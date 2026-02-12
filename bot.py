@@ -8,10 +8,16 @@ from src.handlers.message import message_handler
 from src.handlers.callback import callback_handler
 from src.handlers.admin import admin_stats, admin_ban_user, admin_unban_user, admin_logs
 
+from telegram.request import HTTPXRequest
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
+
 # Initialize DB on startup
 async def post_init(app):
     await init_db()
     print("Database initialized.")
+
+async def error_handler(update, context):
+    print(f"Update {update} caused error {context.error}")
 
 def main():
     # Helper to check config
@@ -21,7 +27,10 @@ def main():
         print(f"Configuration Error: {e}")
         return
 
-    app = ApplicationBuilder().token(Config.TELEGRAM_TOKEN).post_init(post_init).build()
+    request = HTTPXRequest(connection_pool_size=8, connect_timeout=30.0, read_timeout=30.0)
+    app = ApplicationBuilder().token(Config.TELEGRAM_BOT_TOKEN).request(request).post_init(post_init).build()
+    
+    app.add_error_handler(error_handler)
 
     # Commands
     app.add_handler(CommandHandler("start", start_command))

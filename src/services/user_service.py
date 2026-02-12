@@ -50,3 +50,8 @@ async def set_user_state(session: AsyncSession, telegram_id: int, state: str | N
     stmt = update(User).where(User.id == telegram_id).values(state=state, state_data=data)
     await session.execute(stmt)
     await session.commit()
+
+async def clear_user_context(session: AsyncSession, telegram_id: int):
+    stmt = update(User).where(User.id == telegram_id).values(context_history="[]")
+    await session.execute(stmt)
+    await session.commit()
