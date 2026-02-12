@@ -1,0 +1,13 @@
+services:
+  bot:
+    build: .
+    container_name: openrouter_bot
+    restart: always
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///data/bot.db
+    # Network mode: host might be easier for some setups, but bridge is default and safer.
+    # network_mode: bridge
