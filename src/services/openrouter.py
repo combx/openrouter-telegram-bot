@@ -110,5 +110,5 @@ class OpenRouterService:
                     yield content
                     
         except Exception as e:
-            logger.error(f"Stream error: {e}")
+            logger.exception(f"Stream error: {e}")
             raise e

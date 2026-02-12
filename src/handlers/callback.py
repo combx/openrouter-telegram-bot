@@ -18,6 +18,10 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = await get_user(session, user_id)
         if not user: return
 
+        # Global State Reset on any interaction (except explicit state setters below)
+        # This fixes the issue where users get stuck in "SEARCH_MODE" after clicking "Back"
+        await set_user_state(session, user_id, None)
+
         if data == "menu_main":
             is_admin = (user_id == Config.ADMIN_ID)
             await query.edit_message_text(
@@ -117,3 +121,67 @@ Key Type: {"Custom" if user.custom_api_key else "Shared"}
             await clear_user_context(session, user_id)
             await query.answer("Memory cleared! 🧠✨", show_alert=True)
             # await query.edit_message_text("Context cleared.", reply_markup=Keyboards.main_menu((user_id == Config.ADMIN_ID)))
+
+        # Admin Handlers
+        elif data == "admin_stats":
+            if user_id != Config.ADMIN_ID: return
+            
+            from sqlalchemy import select, func, desc
+            from src.database.models import User
+            
+            # Count total users
+            result_users = await session.execute(select(func.count(User.id)))
+            total_users = result_users.scalar()
+            
+            # Sum total requests
+            result_req = await session.execute(select(func.sum(User.usage_count)))
+            total_requests = result_req.scalar() or 0
+            
+            # Get top 5 users by usage
+            result_top = await session.execute(select(User).order_by(desc(User.usage_count)).limit(5))
+            top_users = result_top.scalars().all()
+            
+            top_text = "\n".join([f"`{u.id}` ({u.full_name}): {u.usage_count}" for u in top_users])
+            
+            stats_text = (
+                f"📊 **Statistics**\n\n"
+                f"Total Users: {total_users}\n"
+                f"Total Requests: {total_requests}\n\n"
+                f"🏆 **Top Active Users:**\n{top_text}"
+            )
+            
+            await query.edit_message_text(stats_text, reply_markup=Keyboards.back_to_main(), parse_mode="Markdown")
+
+        elif data == "admin_ban":
+            if user_id != Config.ADMIN_ID: return
+            text = "🚫 **Ban Manager**\n\nTo ban a user, send command:\n`/ban <user_id>`\n\nTo unban:\n`/unban <user_id>`"
+            await query.edit_message_text(text, reply_markup=Keyboards.back_to_main(), parse_mode="Markdown")
+
+        elif data == "admin_logs":
+            if user_id != Config.ADMIN_ID: return
+            
+            from sqlalchemy import select, desc
+            from src.database.models import ErrorLog
+            import io
+            
+            result = await session.execute(select(ErrorLog).order_by(desc(ErrorLog.timestamp)).limit(20))
+            logs = result.scalars().all()
+            
+            if not logs:
+                await query.edit_message_text("✅ No errors logged in the last 20 entries.", reply_markup=Keyboards.back_to_main())
+                return
+                
+            log_lines = []
+            for l in logs:
+                log_lines.append(f"[{l.timestamp.strftime('%Y-%m-%d %H:%M')}] User {l.user_id}: {l.error_text[:100]}")
+                
+            log_text = "\n".join(log_lines)
+            
+            if len(log_text) > 4000:
+                # Send as file if too big
+                file = io.BytesIO(log_text.encode())
+                file.name = "error_logs.txt"
+                await context.bot.send_document(chat_id=chat_id, document=file, caption="⚠️ Recent Errors")
+                await query.answer()
+            else:
+                await query.edit_message_text(f"⚠️ **Recent Errors:**\n\n```\n{log_text}\n```", reply_markup=Keyboards.back_to_main(), parse_mode="Markdown")

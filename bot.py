@@ -15,6 +15,21 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Cal
 async def post_init(app):
     await init_db()
     print("Database initialized.")
+    
+    # Check Token validity
+    try:
+        me = await app.bot.get_me()
+        print(f"Bot connected as @{me.username} ({me.id})")
+    except Exception as e:
+        print(f"CRITICAL: Failed to connect to Telegram API. Check your token. Error: {e}")
+        return
+
+    # Clear conflicting webhooks
+    try:
+        await app.bot.delete_webhook(drop_pending_updates=True)
+        print("Webhook cleared. Starting polling...")
+    except Exception as e:
+        print(f"Warning: Failed to delete webhook: {e}")
 
 async def error_handler(update, context):
     print(f"Update {update} caused error {context.error}")

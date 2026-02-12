@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.error import BadRequest
-from src.services.user_service import get_or_create_user, log_error, increment_usage, set_user_state, update_user_model
+from src.services.user_service import get_or_create_user, log_error, increment_usage, set_user_state, update_user_model, set_custom_key
 from src.database import get_db
 from src.services.openrouter import OpenRouterService
 from src.config import Config
@@ -25,52 +25,64 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Handle States
         if user.state == "SEARCH_MODE":
-            status = await update.message.reply_text("🔎 Searching...")
-            
-            api_key = user.custom_api_key or Config.OPENROUTER_API_KEY
-            service = OpenRouterService(api_key=api_key)
-            
-            try:
-                # If looks like a direct ID (has / and no spaces), try to set it
-                if "/" in text and " " not in text:
-                    await update_user_model(session, user_id, text)
-                    await context.bot.edit_message_text(chat_id=chat_id, message_id=status.message_id, text=f"✅ Model set to `{text}`", parse_mode="Markdown")
-                    await set_user_state(session, user_id, None)
-                else:
-                    # Perform search
-                    results = await service.search_models(text)
-                    
-                    if not results:
-                        await context.bot.edit_message_text(chat_id=chat_id, message_id=status.message_id, text="❌ No models found. Try a different query.")
-                    else:
-                        keyboard = []
-                        for model in results[:5]:
-                            name = model.get('name', model.get('id'))
-                            # Shorten name
-                            if len(name) > 30: name = name[:27] + "..."
-                            keyboard.append([InlineKeyboardButton(name, callback_data=f"set_model_{model.get('id')}")])
-                        
-                        keyboard.append([InlineKeyboardButton("⬅️ Back", callback_data="menu_model")])
-                        
-                        await context.bot.edit_message_text(
-                            chat_id=chat_id, 
-                            message_id=status.message_id, 
-                            text=f"🔎 Found {len(results)} models for `{text}`:", 
-                            reply_markup=InlineKeyboardMarkup(keyboard),
-                            parse_mode="Markdown"
-                        )
+            # Heuristic: If text is long or looks like a question, treat as chat
+            if len(text) > 50 or "?" in text or " " in text and len(text.split()) > 5:
+                await set_user_state(session, user_id, None)
+                await update.message.reply_text("🔄 Search cancelled. Sending as message...")
+                # Update local user object to fall through to normal chat
+                user.state = None
+            else:
+                status = await update.message.reply_text("🔎 Searching...")
+                
+                api_key = user.custom_api_key or Config.OPENROUTER_API_KEY
+                service = OpenRouterService(api_key=api_key)
+                
+                try:
+                    # If looks like a direct ID (has / and no spaces), try to set it
+                    if "/" in text and " " not in text:
+                        await update_user_model(session, user_id, text)
+                        await context.bot.edit_message_text(chat_id=chat_id, message_id=status.message_id, text=f"✅ Model set to `{text}`", parse_mode="Markdown")
                         await set_user_state(session, user_id, None)
-                    
-            except Exception as e:
-                await context.bot.edit_message_text(chat_id=chat_id, message_id=status.message_id, text=f"Error: {e}")
-            
-            return
+                    else:
+                        # Perform search
+                        results = await service.search_models(text)
+                        
+                        if not results:
+                            await context.bot.edit_message_text(chat_id=chat_id, message_id=status.message_id, text="❌ No models found. Try a different query.")
+                        else:
+                            keyboard = []
+                            for model in results[:5]:
+                                name = model.get('name', model.get('id'))
+                                # Shorten name
+                                if len(name) > 30: name = name[:27] + "..."
+                                keyboard.append([InlineKeyboardButton(name, callback_data=f"set_model_{model.get('id')}")])
+                            
+                            keyboard.append([InlineKeyboardButton("⬅️ Back", callback_data="menu_model")])
+                            
+                            await context.bot.edit_message_text(
+                                chat_id=chat_id, 
+                                message_id=status.message_id, 
+                                text=f"🔎 Found {len(results)} models for `{text}`:", 
+                                reply_markup=InlineKeyboardMarkup(keyboard),
+                                parse_mode="Markdown"
+                            )
+                            await set_user_state(session, user_id, None)
+                        
+                except Exception as e:
+                    await context.bot.edit_message_text(chat_id=chat_id, message_id=status.message_id, text=f"Error: {e}")
+                
+                return
 
         elif user.state == "SET_CUSTOM_KEY":
             if text == "-":
                 await set_custom_key(session, user_id, None)
                 await update.message.reply_text("✅ Custom key removed. Using shared key.")
             else:
+                # Validation: Check if key is ASCII
+                if not text.isascii():
+                    await update.message.reply_text("❌ Invalid API Key. Key must contain only Latin characters and numbers.\n\nPlease try again or send '-' to cancel.")
+                    return
+
                 await set_custom_key(session, user_id, text)
                 await update.message.reply_text("✅ Custom key saved!")
             
