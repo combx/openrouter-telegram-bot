@@ -15,7 +15,7 @@ class User(Base):
     
     custom_api_key: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
-    current_model: Mapped[str] = mapped_column(String, default="deepseek/deepseek-r1:free")
+    current_model: Mapped[str] = mapped_column(String, default="google/gemini-2.0-flash-lite-preview-02-05:free")
     current_role: Mapped[str] = mapped_column(String, default="assistant")
     usage_count: Mapped[int] = mapped_column(Integer, default=0)
     is_unlimited: Mapped[bool] = mapped_column(Boolean, default=False)
