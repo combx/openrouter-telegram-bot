@@ -5,6 +5,7 @@ services:
     restart: always
     volumes:
       - ./data:/app/data
+      - .:/app
     env_file:
       - .env
     environment:
