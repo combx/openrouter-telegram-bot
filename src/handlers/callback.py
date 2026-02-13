@@ -29,14 +29,29 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=Keyboards.main_menu(is_admin)
             )
             
-        elif data == "menu_model":
-            # Fetch top free models
+        elif data.startswith("menu_model"):
+            page = 0
+            if "page_" in data:
+                try:
+                    page = int(data.split("page_")[1])
+                except:
+                    page = 0
+
+            # Fetch all models (sorted)
             service = OpenRouterService(api_key=Config.OPENROUTER_API_KEY)
             models = await service.get_free_models()
             
+            # Helper text
+            total_models = len(models)
+            start_index = page * 5
+            end_index = min(start_index + 5, total_models)
+            
+            text = f"Current Model: `{user.current_model}`\n\nSelect a top free model (Reliable & Popular sorted):\n"
+            text += f"Showing {start_index+1}-{end_index} of {total_models}"
+            
             await query.edit_message_text(
-                f"Current Model: `{user.current_model}`\n\nSelect a top free model or search manually:",
-                reply_markup=Keyboards.model_menu(user.current_model, models),
+                text,
+                reply_markup=Keyboards.model_menu(user.current_model, models, page),
                 parse_mode="Markdown"
             )
         

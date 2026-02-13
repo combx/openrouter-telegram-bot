@@ -55,28 +55,40 @@ class OpenRouterService:
             and float(m.get('pricing', {}).get('completion', -1)) == 0
         ]
         
-        # Sort by popularity (heuristic) + context_length
-        # Boost score for known popular families
-        popular_keywords = ["deepseek", "gemini", "llama", "qwen", "mistral"]
-        
+        # Tier 1: High Reliability (Mainstream providers)
+        tier_1 = ["google/", "meta-llama/", "mistralai/", "microsoft/"]
+        # Tier 2: Popular but potentially rate-limited
+        tier_2 = ["deepseek/", "qwen/"]
+        # Tier 3: Everything else (often community merges, experimental)
+
         def sort_key(model):
-            score = 0
-            model_id = model.get('id', '').lower()
+            mid = model.get('id', '').lower()
             context = int(model.get('context_length', 0))
             
-            # Boost for popular families
-            for keyword in popular_keywords:
-                if keyword in model_id:
-                    score += 10**9  # Huge boost to put them on top
+            score = 0
             
-            # Secondary sort by context length
+            # Check Tiers
+            is_t1 = any(k in mid for k in tier_1)
+            is_t2 = any(k in mid for k in tier_2)
+            
+            if is_t1:
+                score += 10**12 # Top priority
+            elif is_t2:
+                score += 10**9  # High priority
+            
+            # Secondary sort: Deprioritize "chimera", "dolphin", "nous" if they are not in T1
+            # (Though T1 filter above handles most, but let's be safe for T3)
+            if "chimera" in mid or "dolphin" in mid or "nous" in mid:
+                score -= 10**6
+                
+            # Tertiary sort by context length
             score += context
             return score
 
         free_models.sort(key=sort_key, reverse=True)
         
-        # Take top 5
-        return free_models[:5]
+        # Return ALL models for pagination (controlled by views)
+        return free_models
 
     async def search_models(self, query: str) -> list[dict]:
         all_models = await self._fetch_models()

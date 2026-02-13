@@ -26,12 +26,17 @@ class Keyboards:
         return InlineKeyboardMarkup(keyboard)
 
     @staticmethod
-    def model_menu(current_model: str, models_list: list[dict] = None) -> InlineKeyboardMarkup:
+    def model_menu(current_model: str, models_list: list[dict] = None, page: int = 0) -> InlineKeyboardMarkup:
         keyboard = []
+        PAGE_SIZE = 5
         
         # Add dynamic buttons for top free models
         if models_list:
-            for model in models_list:
+            start_index = page * PAGE_SIZE
+            end_index = start_index + PAGE_SIZE
+            current_page_models = models_list[start_index:end_index]
+            
+            for model in current_page_models:
                 name = model.get('name', 'Unknown')
                 # Shorten name if too long
                 if len(name) > 30:
@@ -43,6 +48,10 @@ class Keyboards:
                     name = f"✅ {name}"
                 
                 keyboard.append([InlineKeyboardButton(name, callback_data=f"set_model_{model_id}")])
+            
+            # Pagination Controls
+            if end_index < len(models_list):
+                 keyboard.append([InlineKeyboardButton(f"⬇️ Show More ({len(models_list) - end_index} left)", callback_data=f"menu_model_page_{page + 1}")])
         
         keyboard.append([InlineKeyboardButton("🔎 Manual Search", callback_data="model_search")])
         keyboard.append([
